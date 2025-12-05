@@ -144,6 +144,9 @@ window.addEventListener('cmd-dimension', (e) => {
 
 const terrainGen = new TerrainGenerator(Math.random());
 const world = new World(scene, terrainGen);
+// Immediately clamp title screen render distance to 2 chunks to reduce menu lag
+world.setRenderDistance(2);
+
 const particleSystem = new ParticleSystem(scene);
 const player = new Player(scene, camera, sceneHUD, cameraHUD);
 const audioManager = new AudioManager();
@@ -677,6 +680,9 @@ window.addEventListener('start-game', async (e) => {
     loadingEl.style.display = 'block';
     const worldData = e.detail;
     
+    // Restore normal gameplay render distance when a world starts
+    world.setRenderDistance(CONFIG.RENDER_DISTANCE_DEFAULT);
+
     // Reset Day Cycle Speed for Gameplay
     dayNightCycle.dayDuration = CONFIG.DAY_DURATION;
 
