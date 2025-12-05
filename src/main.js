@@ -142,7 +142,8 @@ window.addEventListener('cmd-dimension', (e) => {
     }
 });
 
-const terrainGen = new TerrainGenerator(Math.random());
+const TITLE_SCREEN_SEED = 123456789; // Fixed seed for title screen preview
+const terrainGen = new TerrainGenerator(TITLE_SCREEN_SEED);
 const world = new World(scene, terrainGen);
 // Immediately clamp title screen render distance to 2 chunks to reduce menu lag
 world.setRenderDistance(2);
@@ -768,36 +769,48 @@ function animate() {
     if (uiFps) uiFps.innerText = Math.round(1 / delta);
 
     if (!uiManager.gameStarted) {
-        // Title Screen Live Map
-        const panSpeed = 0.08;
-        const panRadius = 60;
-        
-        // Circular Flight
-        camera.position.x = Math.sin(time * panSpeed) * panRadius;
-        camera.position.z = Math.cos(time * panSpeed) * panRadius;
-        
-        // Terrain Following Height
-        let h = 70;
-        try {
-            // Sample terrain height directly from generator (fast math)
-            h = world.terrainGen.getHeight(camera.position.x, camera.position.z);
-        } catch(e) {}
-        
-        // Smooth camera Y
-        camera.position.y = Math.max(80, h + 25);
-        
-        // Look towards center-ish but slightly sweeping
-        camera.lookAt(0, 60, 0);
+        // Title Screen Live Map on a fixed seed, focused around the origin
+        const panSpeed = 0.05;
+        const panRadius = 48;
+        const centerX = 0;
+        const centerZ = 0;
 
-        // Update World & Visuals
-        world.update(camera.position, time, delta, camera, false);
-        clouds.update(time, camera.position);
+        const angle = time * panSpeed;
+        const camX = centerX + Math.sin(angle) * panRadius;
+        const camZ = centerZ + Math.cos(angle) * panRadius;
+
+        // Sample terrain height under the camera path
+        let terrainY = 64;
+        try {
+            terrainY = world.terrainGen.getHeight(camX, camZ);
+        } catch (e) {
+            terrainY = 64;
+        }
+
+        // Base height above terrain
+        let camY = Math.max(terrainY + 30, 75);
+
+        // Simple anti-clipping: if camera is inside solid blocks, push it upward
+        for (let i = 0; i < 10; i++) {
+            const id = world.getBlock(camX, camY, camZ);
+            if (id === BLOCKS.AIR || id === BLOCKS.WATER) break;
+            camY += 3;
+        }
+
+        camera.position.set(camX, camY, camZ);
+
+        const focusY = terrainY + 10;
+        camera.lookAt(centerX, focusY, centerZ);
+
+        // Keep chunk loading focused on the center to limit to a small region
+        const centerPos = new THREE.Vector3(centerX, focusY, centerZ);
+        world.update(centerPos, time, delta, camera, false);
+        clouds.update(time, centerPos);
         
         // Accelerated Day/Night for ambiance
         dayNightCycle.dayDuration = 120;
         const { skyColor } = dayNightCycle.update(delta, false, camera);
         
-        // Match Atmosphere
         const skyFactor = Math.max(0.02, Math.min(1, (camera.position.y - 20) / 40));
         const currentSky = skyColor.clone().multiplyScalar(skyFactor);
         scene.fog.color.copy(currentSky);
