@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Minecraft Terrain Gen</title>
+    <link href="https://fonts.cdnfonts.com/css/minecraftia" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/minecraft-framework-css@1.1.9/css/main.css">
+    <link rel="stylesheet" href="./style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+                "three/examples/jsm/": "https://esm.sh/three@0.160.0/examples/jsm/",
+                "simplex-noise": "https://esm.sh/simplex-noise@4.0.1",
+                "nipplejs": "https://esm.sh/nipplejs@0.10.1",
+                "lil-gui": "https://esm.sh/lil-gui@0.19.1",
+                "skinview3d": "https://esm.sh/skinview3d@3.0.1?external=three"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="damage-overlay"></div>
+    <div id="lava-overlay"></div>
+    <div id="vignette"></div>
+    <div id="crosshair"></div>
+    <div id="cursor-ghost"></div>
+    
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <div class="tooltip-title">Item Name</div>
+        <div class="tooltip-body"></div>
+        <div class="tooltip-mod">Minecraft</div>
+    </div>
+
+    <!-- Chat -->
+    <div id="chat-container">
+        <div id="chat-history"></div>
+        <div id="chat-input-line">
+            <div id="chat-suggestions"></div>
+            <input type="text" id="chat-input" maxlength="100" placeholder="">
+        </div>
+    </div>
+
+    <!-- Achievement Toast Container -->
+    <div id="achievement-container"></div>
+
+    <!-- Player Tab List -->
+    <div id="player-tab-list">
+        <div class="tab-header">Online Players</div>
+        <div id="tab-list-content"></div>
+    </div>
+
+    <div id="ui" style="display: none;">
+        <h3 style="margin: 0;">MINECRAP ALPHA 1.0.1</h3>
+        <span class="debug-info">
+            <span id="fps-counter">0</span> fps
+            | <span id="biome-debug">Loading...</span>
+            | C:<span id="cont-debug">0.00</span>
+            E:<span id="ero-debug">0.00</span>
+            PV:<span id="pv-debug">0.00</span>
+        </span>
+    </div>
+    <div id="loading" style="display: none;">GENERATING WORLD...</div>
+    
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="container">
+        <div class="footer-text footer-left" style="display: none;" id="footer-ver">Minecraft 1.20.4 (WebSim)</div>
+        <div class="footer-text footer-right" style="display: none;" id="footer-copy">Copyright Mojang AB. Do not distribute!</div>
+
+        <!-- Death Screen -->
+        <div id="death-screen" class="menu" style="display: none; background: rgba(120, 10, 10, 0.6);">
+            <div class="menu-title" style="font-size: 64px; margin-bottom: 10px;">You Died!</div>
+            <div id="score-display" style="font-size: 24px; color: #fff; margin-bottom: 40px; text-shadow: 2px 2px 0 #000;">Score: <span style="color: #ff0">0</span></div>
+            <div class="btn-minecraft" id="btn-respawn">Respawn</div>
+            <div class="btn-minecraft" id="btn-title-death">Title Screen</div>
+        </div>
+
+        <!-- Main Title Screen -->
+        <div id="main-menu" class="menu">
+            <div class="logo-container">
+                <img src="./minecraft_title (2).png" alt="MINECRAFT" style="height: 90px; width: auto; image-rendering: pixelated;">
+                <div class="splash-text" id="splash-text">Also try Terraria!</div>
+            </div>
+            
+            <div class="menu">
+                <button class="btn-minecraft" id="btn-singleplayer">Singleplayer</button>
+                <button class="btn-minecraft" id="btn-multiplayer">Multiplayer</button>
+            </div>
+            <div class="menu-options">
+                <button class="btn-minecraft" id="btn-options-main">Options...</button>
+                <button class="btn-minecraft" onclick="window.location.reload()">Quit Game</button>
+            </div>
+        </div>
+
+        <!-- World Select Menu -->
+        <div id="world-select-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 32px; margin-bottom: 20px;">Select World</div>
+            <div id="world-list" style="width: 100%; height: 60vh; background: rgba(0,0,0,0.5); border-top: 2px solid #fff; border-bottom: 2px solid #fff; margin-bottom: 20px; overflow-y: auto; padding: 10px 0; display: flex; flex-direction: column; gap: 5px; box-sizing: border-box;">
+                <!-- World items injected here -->
+            </div>
+            <div class="menu-options" style="width: 620px; max-width: 100%; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-minecraft" id="btn-play-selected" style="width: 200px;" disabled>Play Selected World</button>
+                <button class="btn-minecraft" id="btn-create-new" style="width: 200px;">Create New World</button>
+                <button class="btn-minecraft" id="btn-world-back" style="width: 200px;">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Create World Menu -->
+        <div id="create-world-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 32px; margin-bottom: 20px;">Create New World</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; width: 60%;">
+                <label style="color: #ffffff; font-size: 16px; align-self: flex-start; text-shadow: 3px 3px 0 #000;">World Name</label>
+                <input type="text" id="world-name-input" value="New World" class="btn-minecraft" style="text-align: left; padding-left: 10px; cursor: text; background: black; border: 2px solid #a0a0a0; color: white; width: 100%;">
+                
+                <label style="color: #ffffff; font-size: 16px; align-self: flex-start; text-shadow: 3px 3px 0 #000;">Seed (Optional)</label>
+                <input type="text" id="world-seed-input" placeholder="Leave blank for random" class="btn-minecraft" style="text-align: left; padding-left: 10px; cursor: text; background: black; border: 2px solid #a0a0a0; color: white; width: 100%;">
+
+                <button class="btn-minecraft" id="btn-world-type" style="width: 100%;">World Type: Default</button>
+                <div id="superflat-options" style="display:none; color: #ffffff; font-size: 12px; text-align: center; text-shadow: 3px 3px 0 #000;">(Grass, Dirt, Bedrock)</div>
+            </div>
+
+            <div class="menu-options" style="width: 60%;">
+                <button class="btn-minecraft" id="btn-do-create" style="width: 49%;">Create New World</button>
+                <button class="btn-minecraft" id="btn-create-cancel" style="width: 49%;">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Join Multiplayer Menu (Styled like Server List) -->
+        <div id="join-game-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 32px; margin-bottom: 20px;">Multiplayer</div>
+            
+            <div style="display: flex; gap: 20px;">
+                <!-- LAN Section -->
+                <div style="display: flex; flex-direction: column; align-items: center; width: 300px; background: rgba(0,0,0,0.5); padding: 10px; border: 2px solid #fff;">
+                    <div style="font-size: 20px; color: #ff0; text-shadow: 2px 2px 0 #000; margin-bottom: 10px;">LAN Game</div>
+                    <div style="font-size: 12px; color: #ccc; margin-bottom: 20px; text-align: center;">Local network play. Requires code.</div>
+                    
+                    <input type="text" id="lan-code-input" placeholder="LAN Code" class="btn-minecraft" maxlength="6" style="text-align: center; width: 200px; margin-bottom: 10px;">
+                    <button class="btn-minecraft" id="btn-join-lan" style="width: 200px;">Join LAN</button>
+                    <button class="btn-minecraft" id="btn-host-lan" style="width: 200px;">Host LAN</button>
+                </div>
+
+                <!-- Server Section -->
+                <div style="display: flex; flex-direction: column; align-items: center; width: 300px; background: rgba(0,0,0,0.5); padding: 10px; border: 2px solid #fff;">
+                    <div style="font-size: 20px; color: #5f5; text-shadow: 2px 2px 0 #000; margin-bottom: 10px;">Public Server</div>
+                    <div style="font-size: 12px; color: #ccc; margin-bottom: 20px; text-align: center;">Persistent world for this URL.<br>Shared with everyone.</div>
+                    
+                    <button class="btn-minecraft" id="btn-join-server" style="width: 200px;">Join Server</button>
+                    <div style="height: 10px;"></div>
+                    <button class="btn-minecraft" id="btn-publish-server" style="width: 200px; font-size: 12px;">Publish Local World</button>
+                </div>
+            </div>
+
+            <button class="btn-minecraft" id="btn-join-cancel" style="width: 200px; margin-top: 20px;">Back</button>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 40px; margin-bottom: 20px;">Game Menu</div>
+            
+            <button class="btn-minecraft btn-full" id="btn-resume">Back to Game</button>
+            
+            <div class="menu-row">
+                <button class="btn-minecraft btn-half" id="btn-advancements">Advancements</button>
+                <button class="btn-minecraft btn-half" id="btn-stats">Statistics</button>
+            </div>
+            
+            <div class="menu-row">
+                <button class="btn-minecraft btn-half" style="color: #aaa;">Give Feedback</button>
+                <button class="btn-minecraft btn-half" style="color: #aaa;">Report Bugs</button>
+            </div>
+            
+            <div class="menu-row">
+                <button class="btn-minecraft btn-half" id="btn-options-pause">Options...</button>
+                <button class="btn-minecraft btn-half" id="btn-open-lan">Open to LAN</button>
+            </div>
+            
+            <button class="btn-minecraft btn-full" onclick="window.location.reload()">Save and Quit to Title</button>
+        </div>
+
+        <!-- Options Menu -->
+        <div id="options-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 40px;">Options</div>
+            
+            <div class="slider-container" style="margin-bottom: 10px; width: 450px;">
+                <label for="render-dist-slider" class="btn-minecraft" style="margin-bottom: 5px; cursor: default; width: 100%;">Render Distance: <span id="render-dist-val">8</span> Chunks</label>
+                <input type="range" id="render-dist-slider" min="2" max="32" value="8" step="1" style="width: 100%;">
+            </div>
+
+            <div class="btn-minecraft" id="btn-auto-pause">Auto Pause on Lost Focus: ON</div>
+            <div class="btn-minecraft" id="btn-skin-settings">Skin Customization...</div>
+            <div class="btn-minecraft" id="btn-sound-settings">Music & Sounds...</div>
+            <div class="btn-minecraft" id="btn-controls-settings">Controls...</div>
+            <div class="btn-minecraft" id="btn-video-settings">Video Settings...</div>
+            <div class="btn-minecraft" id="btn-options-back" style="margin-top: 20px;">Done</div>
+        </div>
+
+        <!-- Sound Settings Menu -->
+        <div id="sound-menu" class="menu dirt-bg" style="display: none; flex-direction: column; align-items: center;">
+            <div class="menu-title" style="font-size: 40px;">Music & Sounds</div>
+            
+            <div class="slider-container" style="margin-bottom: 10px; width: 450px;">
+                <label for="master-vol-slider" class="btn-minecraft" style="margin-bottom: 5px; cursor: default; width: 100%;">Master Volume: <span id="master-vol-val">100%</span></label>
+                <input type="range" id="master-vol-slider" min="0" max="100" value="100" step="1" style="width: 100%;">
+            </div>
+            
+            <div class="slider-container" style="margin-bottom: 10px; width: 450px;">
+                <label for="music-vol-slider" class="btn-minecraft" style="margin-bottom: 5px; cursor: default; width: 100%;">Music: <span id="music-vol-val">50%</span></label>
+                <input type="range" id="music-vol-slider" min="0" max="100" value="50" step="1" style="width: 100%;">
+            </div>
+
+            <div class="slider-container" style="margin-bottom: 10px; width: 450px;">
+                <label for="sfx-vol-slider" class="btn-minecraft" style="margin-bottom: 5px; cursor: default; width: 100%;">Sound Effects: <span id="sfx-vol-val">100%</span></label>
+                <input type="range" id="sfx-vol-slider" min="0" max="100" value="100" step="1" style="width: 100%;">
+            </div>
+
+            <div class="btn-minecraft" id="btn-sound-back" style="margin-top: 20px;">Done</div>
+        </div>
+
+        <!-- Skin Customization Menu -->
+        <div id="skin-menu" class="menu dirt-bg" style="display: none; flex-direction: column; align-items: center;">
+            <div class="menu-title" style="font-size: 40px;">Skin Settings</div>
+            <div style="display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 2px; border: 2px solid #000; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2); margin-bottom: 20px;">
+                <canvas id="skin-preview-canvas" width="150" height="200" style="width: 150px; height: 200px; background: rgba(0,0,0,0.2); margin-bottom: 10px;"></canvas>
+                
+                <button class="btn-minecraft" id="btn-toggle-model" style="width: 200px; margin-bottom: 10px;">Model: Steve</button>
+                
+                <label for="skin-upload" class="btn-minecraft" style="width: 200px; font-size: 16px; margin: 0;">
+                    Upload Skin
+                </label>
+                <input type="file" id="skin-upload" accept="image/png" style="display: none;">
+            </div>
+            <div class="btn-minecraft" id="btn-skin-back">Done</div>
+        </div>
+
+        <!-- Video Settings Menu -->
+        <div id="video-menu" class="menu dirt-bg" style="display: none; flex-direction: column; align-items: center;">
+            <div class="menu-title" style="font-size: 40px;">Video Settings</div>
+            
+            <div class="slider-container" style="margin-bottom: 10px; width: 450px;">
+                <label for="fov-slider" class="btn-minecraft" style="margin-bottom: 5px; cursor: default; width: 100%;">FOV: <span id="fov-val">75</span></label>
+                <input type="range" id="fov-slider" min="30" max="110" value="75" step="1" style="width: 100%;">
+            </div>
+
+            <div class="btn-minecraft" id="btn-video-res">Resolution: 100%</div>
+            <div class="btn-minecraft" id="btn-ui-scale">UI Scale: 4</div>
+            <div class="btn-minecraft" id="btn-video-shadows">Shadows: ON</div>
+            <div class="btn-minecraft" id="btn-video-particles">Particles: All</div>
+            <div class="btn-minecraft" id="btn-video-chunk-updates">Chunk Updates: 4</div>
+            <div class="btn-minecraft" id="btn-video-clouds">Clouds: ON</div>
+            <div class="btn-minecraft" id="btn-video-bobbing">View Bobbing: ON</div>
+            <div class="btn-minecraft" id="btn-video-filter">Texture Filtering: Nearest</div>
+            <div class="btn-minecraft" id="btn-video-back" style="margin-top: 20px;">Done</div>
+        </div>
+
+        <!-- Controls Menu -->
+        <div id="controls-menu" class="menu dirt-bg" style="display: none;">
+            <div class="menu-title" style="font-size: 40px;">Controls</div>
+            <div style="color: white; background: rgba(0,0,0,0.5); padding: 20px; border: 2px solid #000; margin-bottom: 20px; max-height: 400px; overflow-y: auto; font-family: 'Minecraft', sans-serif;">
+                <p>W, A, S, D - Move</p>
+                <p>Space - Jump</p>
+                <p>Left Click - Mine / Attack</p>
+                <p>Right Click - Place Block</p>
+                <p>Shift - Sneak</p>
+                <p>R - Sprint</p>
+                <p>E - Inventory</p>
+                <p>Q - Drop Item</p>
+                <p>T - Chat</p>
+                <p>V / F5 - Toggle Camera</p>
+                <p>1-9 - Select Item</p>
+                <p>Esc - Pause / Back</p>
+            </div>
+            <div class="btn-minecraft" id="btn-controls-back">Done</div>
+        </div>
+    </div>
+    
+    <!-- Inventory Menu -->
+    <div id="inventory-menu">
+        <div id="inv-window">
+            <div id="inv-player-preview"></div>
+            <div id="inv-crafting-grid"></div>
+            <div id="inv-crafting-output"></div>
+            <div id="inv-main-grid" class="inv-grid"></div>
+            <div id="inv-hotbar-grid" class="inv-grid"></div>
+        </div>
+    </div>
+
+    <!-- Crafting Table Menu -->
+    <div id="crafting-menu">
+        <div id="craft-window">
+            <div id="craft-3x3-grid"></div>
+            <div id="craft-output"></div>
+            <div id="craft-main-grid"></div>
+            <div id="craft-hotbar-grid"></div>
+        </div>
+    </div>
+
+    <div id="hotbar-container">
+        <div id="health-bar"></div>
+        <div id="hotbar">
+            <div id="selector"></div>
+            <div id="slots-layer"></div>
+        </div>
+    </div>
+
+    <div id="portal-overlay"></div>
+    <svg style="display: none;">
+      <defs>
+        <filter id="portal-wave">
+          <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" result="turbulence" />
+          <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="20" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+
+    <div id="notification-area" style="position: fixed; top: 60px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; z-index: 9000;"></div>
+
+    <div id="mobile-controls">
+        <div id="zone-left" class="zone"></div>
+        <div id="zone-right" class="zone"></div>
+        <div id="mobile-jump" class="mobile-btn"></div>
+        <div id="mobile-chat" class="mobile-btn"></div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+    <script src="https://unpkg.com/minecraft-framework-css@1.1.9/css/assets/script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+

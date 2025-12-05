@@ -1,0 +1,1125 @@
+@font-face {
+    font-family: 'Minecraft';
+    src: url('./MinecraftRegular-Bmg3.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Minecraft';
+    src: url('./MinecraftBold-nMK1.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Minecraft';
+    src: url('./MinecraftItalic-R8Mo.otf') format('opentype');
+    font-weight: normal;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Minecraft';
+    src: url('./MinecraftBoldItalic-1y1e.otf') format('opentype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+/* Dedicated font for the Minecrap title */
+@font-face {
+    font-family: 'MinecraftItalic';
+    src: url('./MinecraftItalic-R8Mo.otf') format('opentype');
+}
+
+:root {
+    --ui-scale: 4;
+}
+
+* {
+    font-family: 'Minecraft', sans-serif;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: none;
+    font-smooth: never;
+    text-rendering: geometricPrecision; /* Better for pixel fonts than optimizeSpeed */
+    box-sizing: border-box;
+}
+
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: #111; /* Dark background instead of image */
+}
+#canvas-container { width: 100vw; height: 100vh; }
+
+/* Prevent dragging/selecting of game images */
+img {
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* UI Button Styles */
+.btn-minecraft {
+    background: #727272;
+    color: #ffffff; /* Strict White */
+    width: 450px;
+    padding: .5rem 0;
+    margin-bottom: 10px; /* Standardized margin */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    font-size: 1rem;
+    letter-spacing: .025em;
+    border: 2px solid rgba(0, 0, 0, 1);
+    box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.5),
+                inset -3px -3px 0 rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    font-family: 'Minecraft', sans-serif;
+}
+.btn-minecraft:hover {
+    background: rgba(115, 107, 221, 1);
+}
+.btn-minecraft:focus {
+    color: #ffffff; /* Strict White */
+    outline: none;
+}
+.btn-minecraft:active {
+     border: 2px solid rgba(0, 0, 0, 1); /* consistent border */
+}
+
+.menu-row {
+    display: flex;
+    gap: 10px;
+    width: 450px;
+    margin-bottom: 10px;
+    justify-content: space-between;
+}
+
+.btn-half {
+    width: 220px;
+    margin-bottom: 0;
+}
+
+.btn-full {
+    width: 450px;
+    margin-bottom: 10px;
+}
+
+/* Blur filter for Main Menu */
+.blur-filter {
+    filter: blur(3px); /* Reduced from 8px */
+    transition: filter 0.5s;
+}
+
+/* Dirt Background for Pause/Options */
+.dirt-bg {
+    background: url('./dirt.png');
+    background-size: 64px;
+    image-rendering: pixelated;
+    position: fixed !important; /* Force fill viewport */
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+.dirt-bg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* Darken the dirt texture to match menu aesthetic */
+    background: rgba(0,0,0,0.75);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Nine Slice Border for Achievements/Advancements */
+.nine-slice-element {
+    border: 2px solid #555;
+    background-color: #212121; /* Fallback/Inner color */
+}
+
+/* Red Damage / Death Overlay */
+#damage-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #ff0000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 900;
+    mix-blend-mode: multiply;
+    transition: opacity 0.1s;
+}
+
+#lava-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: #cf3802;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 850;
+    mix-blend-mode: hard-light;
+    transition: opacity 0.5s;
+}
+
+#vignette {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: url('./vignette_fixed.png');
+    background-size: 100% 100%;
+    pointer-events: none;
+    z-index: 800;
+}
+
+.vignette {
+    display: block;
+}
+
+#menu-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: none; /* transparent background */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+
+/* Achievement Toasts */
+#achievement-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9000;
+    pointer-events: none;
+}
+
+.achievement-toast {
+    width: 320px;
+    height: 64px;
+    background-color: #212121;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    position: relative;
+    font-family: 'Minecraft', sans-serif;
+    image-rendering: pixelated;
+    
+    /* Standard border fallback since asset is missing */
+    border: 2px solid #ffffff;
+    outline: 2px solid #000000;
+    box-shadow: 4px 4px 0 #000;
+    
+    /* Slide In Animation */
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, fadeOut 0.5s ease-in 4.5s forwards;
+    margin-right: -400px; /* Start off-screen */
+}
+
+@keyframes slideIn {
+    0% { margin-right: -400px; }
+    100% { margin-right: 10px; }
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; margin-right: 10px; }
+    100% { opacity: 0; margin-right: -400px; }
+}
+
+.achievement-icon {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.achievement-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.achievement-header {
+    color: #ffffff; /* Strict White */
+    font-size: 14px;
+    margin-bottom: 4px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+.achievement-name {
+    color: #ffffff; /* Strict White */
+    font-size: 14px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+/* Player Tab List */
+#player-tab-list {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    z-index: 8000;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    min-width: 300px;
+    color: white;
+    border: 2px solid #aaa;
+}
+
+.tab-header {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffffff; /* Strict White */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+#tab-list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tab-player-row {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 4px;
+}
+
+.tab-player-head {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    background-color: #555;
+}
+
+.tab-player-name {
+    flex-grow: 1;
+    font-size: 16px;
+}
+
+.tab-player-ping {
+    font-size: 14px;
+    color: #ffffff; /* Strict White */
+}
+
+/* User requested menu structure styling */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+.menu-options {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    width: 450px;
+}
+.menu-options .btn-minecraft {
+    width: 220px; /* Half width roughly */
+    margin-bottom: 0;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0;
+    margin-bottom: 0;
+    /* Apply UI Scale to menus */
+    transform: scale(calc(var(--ui-scale) / 4));
+    transform-origin: center center;
+}
+
+#main-menu, #pause-menu {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%;
+}
+
+/* Title Layout */
+.logo-container {
+    position: relative;
+    margin-bottom: 40px;
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.splash-text {
+    position: absolute;
+    bottom: 10px;
+    right: -70px;
+    font-family: 'Minecraft', sans-serif;
+    font-size: 20px;
+    color: #ffff55; /* Minecraft Yellow */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    transform: rotate(-20deg);
+    animation: splashPulse 0.5s ease-in-out infinite alternate;
+    white-space: nowrap;
+    z-index: 10;
+    pointer-events: none;
+    -webkit-font-smoothing: none;
+}
+
+@keyframes splashPulse {
+    from { transform: rotate(-20deg) scale(1); }
+    to { transform: rotate(-20deg) scale(1.05); }
+}
+
+.footer-text {
+    position: absolute;
+    bottom: 10px;
+    color: #ffffff; /* Strict White */
+    font-size: 14px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    pointer-events: none;
+    font-family: 'Minecraft', sans-serif;
+    z-index: 2000;
+}
+.footer-left { left: 4px; }
+.footer-right { right: 4px; }
+
+#death-screen {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(120, 10, 10, 0.6);
+}
+
+.menu-title {
+    font-size: 64px;
+    color: #ffffff; /* Strict White */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    margin-bottom: 40px;
+}
+
+#ui {
+    position: absolute; top: 10px; left: 10px; color: #ffffff; /* Strict White */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    pointer-events: none;
+    background: none; padding: 0; border-radius: 0;
+    font-family: 'Minecraft', sans-serif;
+    font-size: 18px;
+    line-height: 1.2;
+    display: none;
+    white-space: nowrap;
+}
+#ui h3 {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 20px;
+    font-weight: normal;
+    font-family: 'Minecraft', sans-serif;
+    font-style: italic;
+}
+.debug-info {
+    font-size: 14px;
+    color: #ffffff; /* Strict White */
+    display: inline-block;
+}
+#mobile-controls {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; display: none; z-index: 5000;
+}
+.zone { 
+    pointer-events: auto; 
+    position: absolute; 
+    bottom: 40px; 
+    width: 120px; 
+    height: 120px; 
+    background: rgba(255,255,255,0.1); 
+    border-radius: 50%; 
+}
+#zone-left { left: 40px; }
+#zone-right { right: 40px; }
+
+.mobile-btn {
+    pointer-events: auto;
+    position: absolute;
+    background-color: rgba(200, 200, 200, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff; /* Strict White */
+    font-family: 'Minecraft', sans-serif;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    border-radius: 8px;
+    backdrop-filter: blur(2px);
+}
+.mobile-btn:active {
+    background-color: rgba(200, 200, 200, 0.6);
+}
+
+#mobile-jump {
+    width: 60px;
+    height: 60px;
+    bottom: 180px;
+    right: 40px;
+    border-radius: 50%;
+    background-image: url('./Up.png'); /* Re-using arrow asset or text */
+    background-size: 50%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+/* Text fallback if image fails or for clarity */
+#mobile-jump::after { content: "JUMP"; font-size: 10px; margin-top: 30px; opacity: 0.8; }
+
+#mobile-chat {
+    width: 40px;
+    height: 40px;
+    top: 10px;
+    right: 60px; /* Left of pause/settings usually or right top */
+    background-image: url('./furnace_front.png'); /* Placeholder icon or text */
+    background-size: 80%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+#mobile-chat::after { content: "T"; font-size: 14px; font-weight: bold; }
+
+#loading {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: #ffffff; /* Strict White */
+    font-size: 24px; font-weight: bold; text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    pointer-events: none; transition: opacity 0.5s;
+}
+
+.text-yellow {
+    color: #ffff55 !important;
+}
+
+#hotbar-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Pixel perfect scaling based on 182x22 native size */
+    --scale: var(--ui-scale);
+    width: calc(182px * var(--scale));
+    height: calc(22px * var(--scale));
+    pointer-events: none;
+    z-index: 10;
+    display: none; /* Hidden as requested */
+}
+
+/* Health Bar */
+#health-bar {
+    position: absolute;
+    top: calc(-10px * var(--scale));
+    left: 0;
+    width: 100%;
+    height: calc(9px * var(--scale));
+    display: flex;
+    gap: 0; /* Reduced spacing */
+    pointer-events: none;
+}
+
+.heart {
+    width: calc(9px * var(--scale));
+    height: calc(9px * var(--scale));
+    background-size: contain;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    background-image: url('./Novo Projeto (77) (1)_1.png'); /* Slot/Empty Heart Background */
+    position: relative;
+    margin-right: calc(-1px * var(--scale)); 
+}
+
+.heart-inner {
+    width: calc(7px * var(--scale));
+    height: calc(7px * var(--scale));
+    background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute;
+    top: calc(1px * var(--scale));
+    left: calc(1px * var(--scale));
+    transition: opacity 0.1s;
+}
+
+#hotbar {
+    width: 100%;
+    height: 100%;
+    background: url('./fantasia1 (33).png') center center / contain no-repeat;
+    image-rendering: pixelated;
+    position: relative;
+}
+
+/* Container for slots to align them over the background */
+#slots-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: calc(1px * var(--scale));
+}
+
+.slot {
+    width: calc(20px * var(--scale));
+    height: calc(20px * var(--scale));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.item-icon {
+    /* Centered and sized to fill the slot completely */
+    width: 70%; 
+    height: 70%;
+    image-rendering: pixelated;
+    object-fit: contain;
+    display: block;
+    z-index: 5;
+    /* transform removed for better centering */
+}
+
+#selector {
+    position: absolute;
+    top: 50%;
+    width: calc(24px * var(--scale));
+    height: calc(24px * var(--scale));
+    background: url('./costume1 (30).png') center center / contain no-repeat;
+    image-rendering: pixelated;
+    transform: translate(0, -50%); 
+    z-index: 20;
+}
+
+/* Upload Button Style */
+.upload-btn {
+    background-color: #777;
+    border: 2px solid;
+    border-color: #aaa #555 #555 #aaa;
+    color: white;
+    padding: 6px 12px;
+    font-family: 'Minecraft', sans-serif;
+    font-size: 16px;
+    text-shadow: 1px 1px 0 #000;
+    cursor: pointer;
+    display: inline-block;
+    margin-top: 10px;
+}
+.upload-btn:hover { background-color: #5a7da0; border-color: #aaa #555 #555 #aaa; }
+.upload-btn:active { background-color: #444; border-color: #555 #aaa #aaa #555; }
+
+input[type=range] {
+    -webkit-appearance: none;
+    background: transparent;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 10px;
+    background: #ccc;
+    cursor: pointer;
+    border: 2px solid #000;
+    margin-top: -8px;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: #555;
+    border: 1px solid #000;
+}
+
+/* Crosshair */
+#crosshair {
+    position: absolute; top: 50%; left: 50%;
+    width: 32px; height: 32px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+}
+#crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: rgba(255, 255, 255, 1.0);
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+#crosshair::before { top: 14px; left: 0; width: 32px; height: 4px; }
+#crosshair::after { top: 0; left: 14px; width: 4px; height: 32px; }
+
+.item-count {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    color: #ffffff; /* Strict White */
+    font-size: calc(8px * var(--ui-scale)); /* Scaled Font 8px base */
+    font-weight: normal;
+    text-shadow: calc(1px * var(--ui-scale)) calc(1px * var(--ui-scale)) 0 #3e3e3e; /* Scaled Shadow */
+    z-index: 30; /* Above durability bar */
+    pointer-events: none;
+    background-color: transparent;
+    padding: 0 calc(2px * var(--ui-scale)) calc(2px * var(--ui-scale)) 0; /* Scaled Padding */
+    border-radius: 0;
+    line-height: 1;
+    font-family: 'Minecraft', sans-serif;
+    -webkit-font-smoothing: none;
+}
+
+.durability-bar-bg {
+    position: absolute;
+    bottom: 6px; /* Moved down closer to edge */
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(13px * var(--ui-scale)); /* 13px * scale */
+    height: calc(2px * var(--ui-scale)); /* 2px * scale - to allow 1px black shadow */
+    background-color: #000000;
+    z-index: 25;
+    pointer-events: none;
+}
+
+.durability-bar {
+    height: calc(1px * var(--ui-scale)); /* 1px * scale */
+    background-color: #0f0;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#portal-overlay {
+    position: absolute;
+    top: -5%; left: -5%; width: 110%; height: 110%; /* Oversize to cover wobble edges */
+    background-image: url('./nether_portal.png');
+    background-size: 100% 100%;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 880;
+    filter: url(#portal-wave);
+    image-rendering: pixelated;
+    mix-blend-mode: hard-light;
+    transition: opacity 0.5s;
+    display: none;
+    animation: portalPulse 3s infinite alternate;
+}
+
+@keyframes portalPulse {
+    from { transform: scale(1.0); }
+    to { transform: scale(1.05); }
+}
+
+/* Inventory Menu */
+#inventory-menu {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+/* Crafting Table Menu */
+#crafting-menu {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+#craft-window {
+    position: relative;
+    width: calc(176px * var(--ui-scale));
+    height: calc(166px * var(--ui-scale));
+    background: url('./Novo Projeto (92).png') center center / contain no-repeat;
+    image-rendering: pixelated;
+}
+
+/* 3x3 Grid */
+#craft-3x3-grid {
+    position: absolute;
+    top: calc(17px * var(--ui-scale));
+    left: calc(30px * var(--ui-scale));
+    width: calc(54px * var(--ui-scale));
+    height: calc(54px * var(--ui-scale));
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+}
+
+/* Output Slot */
+#craft-output {
+    position: absolute;
+    top: calc(35px * var(--ui-scale)); 
+    left: calc(124px * var(--ui-scale)); 
+    width: calc(26px * var(--ui-scale));
+    height: calc(26px * var(--ui-scale));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+#craft-output:hover { background: rgba(255, 255, 255, 0.2); }
+
+#craft-main-grid {
+    position: absolute;
+    top: calc(84px * var(--ui-scale));
+    left: calc(8px * var(--ui-scale));
+    width: calc(162px * var(--ui-scale));
+    height: calc(54px * var(--ui-scale));
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+}
+
+#craft-hotbar-grid {
+    position: absolute;
+    top: calc(142px * var(--ui-scale));
+    left: calc(8px * var(--ui-scale));
+    width: calc(162px * var(--ui-scale));
+    height: calc(18px * var(--ui-scale));
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+}
+
+#inv-window {
+    position: relative;
+    width: calc(176px * var(--ui-scale));
+    height: calc(166px * var(--ui-scale));
+    background: url('./Novo Projeto (91).png') center center / contain no-repeat;
+    image-rendering: pixelated;
+}
+
+#inv-player-preview {
+    position: absolute;
+    left: calc(25px * var(--ui-scale));
+    top: calc(7px * var(--ui-scale));
+    width: calc(51px * var(--ui-scale));
+    height: calc(72px * var(--ui-scale));
+    z-index: 10;
+}
+
+/* Crafting Grid in Inventory */
+#inv-crafting-grid {
+    position: absolute;
+    top: calc(18px * var(--ui-scale));
+    left: calc(98px * var(--ui-scale));
+    width: calc(36px * var(--ui-scale));
+    height: calc(36px * var(--ui-scale));
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+}
+
+/* Output Slot in Inventory */
+#inv-crafting-output {
+    position: absolute;
+    top: calc(28px * var(--ui-scale));
+    left: calc(154px * var(--ui-scale)); 
+    width: calc(18px * var(--ui-scale));
+    height: calc(18px * var(--ui-scale));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+#inv-crafting-output:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.inv-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 0;
+    position: absolute;
+}
+
+.inv-slot {
+    width: calc(18px * var(--ui-scale));
+    height: calc(18px * var(--ui-scale));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+.inv-slot:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.drag-ghost {
+    position: fixed;
+    width: calc(16px * var(--ui-scale));
+    height: calc(16px * var(--ui-scale));
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    image-rendering: pixelated;
+}
+
+#cursor-ghost {
+    position: fixed;
+    width: calc(16px * var(--ui-scale));
+    height: calc(16px * var(--ui-scale));
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    image-rendering: pixelated;
+    display: none;
+}
+#cursor-ghost img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+#cursor-ghost .item-count {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    color: #ffffff; /* Strict White */
+    font-size: calc(8px * var(--ui-scale));
+    font-weight: normal;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    z-index: 10;
+    font-family: 'Minecraft', sans-serif;
+}
+
+/* Hotbar in Inventory */
+#inv-hotbar-grid {
+    top: calc(142px * var(--ui-scale));
+    left: calc(8px * var(--ui-scale));
+    width: calc(162px * var(--ui-scale));
+    height: calc(18px * var(--ui-scale));
+}
+
+/* Main Inventory */
+#inv-main-grid {
+    top: calc(84px * var(--ui-scale));
+    left: calc(8px * var(--ui-scale));
+    width: calc(162px * var(--ui-scale));
+    height: calc(54px * var(--ui-scale));
+}
+
+.inv-icon {
+    width: 88%; /* Approx 16/18 pixels */
+    height: 88%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    /* transform removed for better centering */
+}
+
+/* Chat UI */
+#chat-container {
+    position: absolute;
+    bottom: 30px;
+    left: 10px;
+    width: 500px;
+    height: 300px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    z-index: 5000;
+    font-family: 'Minecraft', sans-serif;
+}
+
+#chat-history {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 5px;
+    overflow: hidden;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+.chat-msg {
+    background: rgba(0,0,0,0.5);
+    color: #ffffff; /* Strict White */
+    padding: 2px 4px;
+    font-size: 16px;
+    width: fit-content;
+    animation: fadeOut 10s forwards;
+}
+
+.chat-open .chat-msg {
+    animation: none;
+    opacity: 1;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+#chat-input-line {
+    display: none;
+    width: 100%;
+    background: rgba(0,0,0,0.5);
+    pointer-events: auto;
+    position: relative;
+}
+
+#chat-suggestions {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.8);
+    color: #ffffff; /* Strict White */
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px;
+    pointer-events: none;
+    font-size: 14px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+.suggestion-item {
+    color: #ffffff; /* Strict White */
+}
+
+#chat-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #ffffff; /* Strict White */
+    font-family: 'Minecraft', sans-serif;
+    font-size: 16px;
+    padding: 4px;
+    outline: none;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+/* Tooltip Styling */
+#tooltip {
+    position: fixed;
+    display: none;
+    flex-direction: column;
+    background-color: rgba(16, 0, 16, 0.95);
+    padding: 4px 6px;
+    z-index: 10000;
+    pointer-events: none;
+    min-width: 100px;
+    
+    /* Pixel Art Border */
+    border: 2px solid;
+    border-color: #2b0061 #2b0061 #2b0061 #2b0061;
+    
+    /* CSS trick for multi-colored pixel border */
+    box-shadow: 
+        inset 2px 2px 0px #5216a3,  /* Inner Top-Left (Light Purple) */
+        inset -2px -2px 0px #2b0061, /* Inner Bottom-Right (Dark Purple) */
+        2px 2px 0px 0px #000000, /* Outer shadow */
+        -2px -2px 0px 0px #000000, /* Outer shadow */
+        2px -2px 0px 0px #000000, /* Outer shadow */
+        -2px 2px 0px 0px #000000; /* Outer shadow */
+    
+    border-radius: 0; /* No rounded corners for pixel look */
+    image-rendering: pixelated;
+}
+
+.tooltip-title {
+    color: #ffffff; /* Strict White */
+    font-family: 'Minecraft', sans-serif;
+    font-size: 16px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    margin-bottom: 2px;
+    font-weight: normal;
+    line-height: 1.2;
+}
+
+.tooltip-body {
+    color: #ffffff; /* Strict White */
+    font-family: 'Minecraft', sans-serif;
+    font-size: 14px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    margin-bottom: 2px;
+    display: none;
+    line-height: 1.2;
+}
+
+.tooltip-mod {
+    color: #ffffff; /* Strict White */
+    font-family: 'MinecraftItalic', serif;
+    font-style: italic;
+    font-size: 14px;
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+    margin-top: 2px;
+}
+
+/* World List Item Styling */
+.world-item {
+    width: 100%;
+    max-width: 800px; /* Limit width for readability on large screens */
+    margin: 0 auto;
+    padding: 6px;
+    background: rgba(0,0,0,0.5);
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: #ccc;
+    box-sizing: border-box;
+    transition: background-color 0.1s, border-color 0.1s;
+}
+.world-item:hover {
+    background: rgba(0,0,0,0.8);
+    border-color: #888;
+}
+.world-item.selected {
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #fff;
+    color: #fff;
+}
+
+.world-icon {
+    width: 64px;
+    height: 64px;
+    margin-right: 10px;
+    object-fit: cover; /* or contain, but cover fills square */
+    border: 1px solid #555;
+    background-color: #000;
+}
+
+.world-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.world-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff; /* Strict White */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+.world-details {
+    font-size: 14px;
+    color: #ffffff; /* Strict White */
+    text-shadow: 3px 3px 0 #000000; /* Strict 3px Black Shadow */
+}
+
+@keyframes item-pop {
+    0% { transform: scale(0.4, 3.0); }
+    100% { transform: scale(1, 1); }
+}
+
+.item-icon.pop-anim, .inv-icon.pop-anim {
+    animation: item-pop 0.3s cubic-bezier(0.2, 1.2, 0.2, 1);
+}
