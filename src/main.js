@@ -66,6 +66,12 @@ scene.add(dirLight);
 
 const dayNightCycle = new DayNightCycle(dirLight, scene, null);
 
+// Add a dedicated raycaster for title-screen panning collision checks
+const titleRaycaster = new THREE.Raycaster();
+const _titleCamPos = new THREE.Vector3();
+const _titleFocusPos = new THREE.Vector3();
+const _titleDir = new THREE.Vector3();
+
 window.addEventListener('cmd-time', (e) => {
     dayNightCycle.setTime(e.detail);
 });
@@ -797,13 +803,38 @@ function animate() {
             camY += 3;
         }
 
-        camera.position.set(camX, camY, camZ);
-
+        // Build camera and focus positions
+        _titleCamPos.set(camX, camY, camZ);
         const focusY = terrainY + 10;
-        camera.lookAt(centerX, focusY, centerZ);
+        _titleFocusPos.set(centerX, focusY, centerZ);
+
+        // Raycast from focus point towards the camera to avoid clipping into blocks
+        _titleDir.subVectors(_titleCamPos, _titleFocusPos).normalize();
+        const maxDist = _titleCamPos.distanceTo(_titleFocusPos);
+
+        if (world.chunkGroup && world.chunkGroup.children.length > 0) {
+            titleRaycaster.set(_titleFocusPos, _titleDir);
+            titleRaycaster.far = maxDist;
+
+            const intersects = titleRaycaster.intersectObjects(world.chunkGroup.children, true);
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                // Only adjust if we would be inside or very close to geometry
+                if (hit.distance < maxDist - 0.5) {
+                    const safeDist = Math.max(hit.distance - 1.0, 5.0);
+                    _titleCamPos.copy(_titleFocusPos).addScaledVector(_titleDir, safeDist);
+                    // Ensure camera stays above terrain near focus
+                    const minY = terrainY + 8;
+                    if (_titleCamPos.y < minY) _titleCamPos.y = minY;
+                }
+            }
+        }
+
+        camera.position.copy(_titleCamPos);
+        camera.lookAt(_titleFocusPos);
 
         // Keep chunk loading focused on the center to limit to a small region
-        const centerPos = new THREE.Vector3(centerX, focusY, centerZ);
+        const centerPos = _titleFocusPos;
         world.update(centerPos, time, delta, camera, false);
         clouds.update(time, centerPos);
         

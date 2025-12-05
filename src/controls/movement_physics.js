@@ -304,6 +304,7 @@ export class MovementPhysics {
         }
 
         const targetHeight = controls.sneak ? controls.sneakEyeHeight : controls.defaultEyeHeight;
-        controls.eyeHeight += (targetHeight - controls.eyeHeight) * 10 * dt;
+        // Soften vertical eye-height interpolation to reduce jitter
+        controls.eyeHeight += (targetHeight - controls.eyeHeight) * 5 * dt;
     }
 }

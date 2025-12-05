@@ -384,7 +384,8 @@ export class Controls {
             
             // Interpolate eye height for sitting (Lower than standing)
             const targetHeight = 1.2; 
-            this.eyeHeight += (targetHeight - this.eyeHeight) * 10 * dt;
+            // Soften interpolation while riding to avoid sudden vertical jumps
+            this.eyeHeight += (targetHeight - this.eyeHeight) * 4 * dt;
         } else {
             // Delegate Physics Update
             this.movementPhysics.update(dt, this);
